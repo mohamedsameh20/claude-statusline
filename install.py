@@ -52,6 +52,30 @@ def write_settings(path, data):
     tmp.replace(path)
 
 
+def runs_python3(name):
+    try:
+        check = subprocess.run(
+            [name, "-c", "import sys; sys.exit(sys.version_info < (3, 8))"],
+            capture_output=True, timeout=10,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    return check.returncode == 0
+
+
+def python_command():
+    """How settings.json should launch Python.
+
+    A name on PATH survives Python upgrades, so prefer one that runs
+    Python 3.8+. Windows usually has python or py rather than python3.
+    Fall back to the interpreter running this installer.
+    """
+    for name in ("python3", "python", "py"):
+        if shutil.which(name) and runs_python3(name):
+            return name
+    return f'"{Path(sys.executable).as_posix()}"'
+
+
 def smoke_test(script):
     sample = json.dumps({
         "model": {"display_name": "Test"},
@@ -84,7 +108,7 @@ def install():
 
     settings["statusLine"] = {
         "type": "command",
-        "command": f'python3 "{target}"',
+        "command": f'{python_command()} "{target.as_posix()}"',
         "refreshInterval": 1,
     }
     write_settings(settings_path, settings)
@@ -100,7 +124,7 @@ def uninstall():
     settings = load_settings(settings_path)
 
     line = settings.get("statusLine") or {}
-    if str(target) in str(line.get("command", "")):
+    if target.as_posix() in str(line.get("command", "")):
         backup(settings_path)
         del settings["statusLine"]
         write_settings(settings_path, settings)
