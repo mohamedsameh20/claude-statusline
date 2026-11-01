@@ -106,13 +106,19 @@ def install():
         saved = backup(settings_path)
         print(f"Replacing your existing statusLine (backup: {saved}):\n  {previous}")
 
+    python = python_command()
     settings["statusLine"] = {
         "type": "command",
-        "command": f'{python_command()} "{target.as_posix()}"',
+        "command": f'{python} "{target.as_posix()}"',
         "refreshInterval": 1,
     }
     write_settings(settings_path, settings)
     print(f"Installed to {target}")
+    if python.startswith('"'):
+        print(f"No Python 3 command on PATH, so settings use the full path {python}.")
+        print("If Python is upgraded or moved, run install.py again.")
+    else:
+        print(f"Settings launch it with `{python}`.")
     print(f"Updated {settings_path}")
     print("Open a new Claude Code session (or restart it) to see the status line.")
 

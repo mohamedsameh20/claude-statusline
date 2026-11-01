@@ -32,6 +32,8 @@ Open Claude Code and paste this:
 
 > Set up the Claude Code status line from https://github.com/mohamedsameh20/claude-statusline. Follow the "For Claude Code" section of its README.
 
+If you don't have Python, Claude will offer to install it and ask first. On Windows, you can choose between Python and uv.
+
 ### Option B: by hand
 
 ```sh
@@ -48,10 +50,20 @@ If a user has asked you to set this up, do the following. Only change the status
 
 1. Work out the config directory. Use `$CLAUDE_CONFIG_DIR` if it is set, otherwise `~/.claude`. Call it `CONFIG`.
 2. Read `CONFIG/settings.json` if it exists. If it already has a `statusLine` key, show the user its current value and ask whether to replace it. The installer backs up the file first, but still ask before replacing.
-3. Clone the repo into a temporary directory:
+3. Find a Python 3.8+ command. Try `python3`, `python`, then `py` with `--version`. On Windows, a `python3` that opens the Microsoft Store does not count. If one works, go to step 5.
+4. If none works, tell the user the status line needs Python and offer to install it. Install nothing until they agree.
+   - **Windows:** ask the user to choose between Python and uv, and recommend the lighter one for their machine:
+     - **uv is already installed** (`uv --version` works): recommend uv, because it only has to download Python. Run `uv python install 3.12 --default`, then `uv python update-shell`.
+     - **uv is not installed:** recommend Python, because the uv route installs two things (uv, then a Python through it). Run `winget install -e --id Python.Python.3.12`. This also installs the `py` launcher.
+     - **They choose uv anyway:** run `winget install -e --id astral-sh.uv`, then the two uv commands above.
+   - **macOS:** `xcode-select --install`, or `brew install python` if they use Homebrew.
+   - **Linux:** the distro package, for example `sudo apt install python3` or `sudo dnf install python3`.
+
+   A fresh install is often missing from the current shell's PATH. If no Python command is found afterwards, ask the user to restart Claude Code and paste the setup request again. The new session starts from step 1. Running `install.py` from a shell that can't find Python by name writes a full interpreter path into settings, and that path can break after an upgrade.
+5. Clone the repo into a temporary directory:
    `git clone https://github.com/mohamedsameh20/claude-statusline.git "$(mktemp -d)/claude-statusline"`
-4. Read `install.py` and `statusline.py` from that clone. Then run `python3 install.py` from inside it. If `python3` is not available, use `python` or `py`, provided it is Python 3.8 or newer. If none is available, tell the user they need Python 3 and stop. The installer copies `statusline.py` to `CONFIG`, adds a `statusLine` entry to `CONFIG/settings.json`, keeps every other key, and runs a test render. If the test fails, show the error and stop.
-5. Tell the user the status line will appear in the next session and that `python3 install.py --uninstall` removes it.
+6. Read `install.py` and `statusline.py` from the clone. Then run `install.py` from inside it with the command from step 3. The installer copies `statusline.py` to `CONFIG`, adds a `statusLine` entry to `CONFIG/settings.json`, keeps every other key, and runs a test render. If the test fails, show the error and stop.
+7. Tell the user the status line will appear in the next session and that running `install.py --uninstall` with the same Python command removes it.
 
 Do not hand-edit `settings.json` unless the installer fails. If you have to, merge the entry in. Do not overwrite the whole file.
 
